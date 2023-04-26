@@ -36,19 +36,21 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 exports.__esModule = true;
+var bcu = require("bigint-crypto-utils");
 var index_1 = require("./index");
+var index_2 = require("./index");
 function test() {
     return __awaiter(this, void 0, void 0, function () {
-        var bitlength, _a, publicKey, privateKey, plaintext, ciphertext, decryptedtext, message, signature, verified;
-        return __generator(this, function (_b) {
-            switch (_b.label) {
+        var bitlength, _a, publicKey, privateKey, plaintext, ciphertext, decryptedtext, message, signature, verified, blindingFactor, blindedMessage, blindedSignature, unblindedSignature, blindVerified, paillierBitlength, _b, paillierPublicKey, paillierPrivateKey, paillierPlaintext1, paillierPlaintext2, paillierCiphertext1, paillierCiphertext2, paillierDecryptedtext1, paillierDecryptedtext2, paillierPlaintext3, paillierCiphertext3, paillierSum1, paillierSum2, paillierDecryptedSum1, paillierDecryptedSum2;
+        return __generator(this, function (_c) {
+            switch (_c.label) {
                 case 0:
                     bitlength = 2048;
                     return [4 /*yield*/, (0, index_1.generateMyRsaKeys)(bitlength)
                         // Test RSA encryption and decryption
                     ];
                 case 1:
-                    _a = _b.sent(), publicKey = _a.publicKey, privateKey = _a.privateKey;
+                    _a = _c.sent(), publicKey = _a.publicKey, privateKey = _a.privateKey;
                     plaintext = 123456n //número que vulguem encryptar/desencryptar
                     ;
                     ciphertext = publicKey.encrypt(plaintext);
@@ -63,6 +65,65 @@ function test() {
                     console.log('Message:', message.toString());
                     console.log('Signature:', signature.toString());
                     console.log('Verified:', verified.toString());
+                    return [4 /*yield*/, bcu.prime(256)];
+                case 2:
+                    blindingFactor = _c.sent();
+                    blindedMessage = (message * bcu.modPow(blindingFactor, publicKey.e, publicKey.n)) % publicKey.n;
+                    blindedSignature = privateKey.sign(blindedMessage);
+                    unblindedSignature = (blindedSignature * bcu.modInv(blindingFactor, publicKey.n)) % publicKey.n;
+                    blindVerified = publicKey.verify(unblindedSignature);
+                    console.log('Blinded Message:', blindedMessage.toString());
+                    console.log('Blinded Signature:', blindedSignature.toString());
+                    console.log('Unblinded Signature:', unblindedSignature.toString());
+                    console.log('Blind Verified:', blindVerified.toString());
+                    paillierBitlength = 2048;
+                    return [4 /*yield*/, (0, index_2.generatePaillierKeys)(paillierBitlength)];
+                case 3:
+                    _b = _c.sent(), paillierPublicKey = _b.publicKey, paillierPrivateKey = _b.privateKey;
+                    console.log('Paillier Public Key:', paillierPublicKey);
+                    console.log('Paillier Private Key:', paillierPrivateKey);
+                    paillierPlaintext1 = 123456n;
+                    paillierPlaintext2 = 789012n;
+                    return [4 /*yield*/, (0, index_2.encryptPaillier)(paillierPlaintext1, paillierPublicKey)];
+                case 4:
+                    paillierCiphertext1 = _c.sent();
+                    return [4 /*yield*/, (0, index_2.encryptPaillier)(paillierPlaintext2, paillierPublicKey)];
+                case 5:
+                    paillierCiphertext2 = _c.sent();
+                    return [4 /*yield*/, (0, index_2.decryptPaillier)(paillierCiphertext1, paillierPublicKey, paillierPrivateKey)];
+                case 6:
+                    paillierDecryptedtext1 = _c.sent();
+                    return [4 /*yield*/, (0, index_2.decryptPaillier)(paillierCiphertext2, paillierPublicKey, paillierPrivateKey)];
+                case 7:
+                    paillierDecryptedtext2 = _c.sent();
+                    console.log('Paillier Plaintext 1:', paillierPlaintext1.toString());
+                    console.log('Paillier Plaintext 2:', paillierPlaintext2.toString());
+                    console.log('Paillier Ciphertext 1:', paillierCiphertext1.toString());
+                    console.log('Paillier Ciphertext 2:', paillierCiphertext2.toString());
+                    console.log('Paillier Decryptedtext 1:', paillierDecryptedtext1.toString());
+                    console.log('Paillier Decryptedtext 2:', paillierDecryptedtext2.toString());
+                    paillierPlaintext3 = 13579n;
+                    return [4 /*yield*/, (0, index_2.encryptPaillier)(paillierPlaintext3, paillierPublicKey)];
+                case 8:
+                    paillierCiphertext3 = _c.sent();
+                    return [4 /*yield*/, (0, index_2.addPaillier)(paillierCiphertext1, paillierCiphertext2, paillierPublicKey)];
+                case 9:
+                    paillierSum1 = _c.sent();
+                    return [4 /*yield*/, (0, index_2.addPaillier)(paillierSum1, paillierCiphertext3, paillierPublicKey)];
+                case 10:
+                    paillierSum2 = _c.sent();
+                    return [4 /*yield*/, (0, index_2.decryptPaillier)(paillierSum1, paillierPublicKey, paillierPrivateKey)];
+                case 11:
+                    paillierDecryptedSum1 = _c.sent();
+                    return [4 /*yield*/, (0, index_2.decryptPaillier)(paillierSum2, paillierPublicKey, paillierPrivateKey)];
+                case 12:
+                    paillierDecryptedSum2 = _c.sent();
+                    console.log('Paillier Plaintext 3:', paillierPlaintext3.toString());
+                    console.log('Paillier Ciphertext 3:', paillierCiphertext3.toString());
+                    console.log('Paillier Sum 1:', paillierSum1.toString());
+                    console.log('Paillier Sum 2:', paillierSum2.toString());
+                    console.log('Paillier Decrypted Sum 1:', paillierDecryptedSum1.toString());
+                    console.log('Paillier Decrypted Sum 2:', paillierDecryptedSum2.toString());
                     return [2 /*return*/];
             }
         });

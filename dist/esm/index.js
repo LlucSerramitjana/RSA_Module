@@ -1,4 +1,5 @@
 import * as bcu from 'bigint-crypto-utils';
+import * as paillier from 'paillier-bigint';
 class MyRsaPublicKey {
     constructor(e, n) {
         this.e = e;
@@ -38,4 +39,23 @@ export async function generateMyRsaKeys(bitlength) {
         publicKey: new MyRsaPublicKey(e, n),
         privateKey: new MyRsaPrivateKey(d, n)
     };
+}
+export async function generatePaillierKeys(bitlength) {
+    const keys = await paillier.generateRandomKeysSync(bitlength);
+    return {
+        publicKey: keys.publicKey,
+        privateKey: keys.privateKey
+    };
+}
+export async function encryptPaillier(m, publicKey) {
+    const c = publicKey.encrypt(m);
+    return c;
+}
+export async function decryptPaillier(c, publicKey, privateKey) {
+    const m = privateKey.decrypt(c);
+    return m;
+}
+export async function addPaillier(c1, c2, publicKey) {
+    const c = publicKey.addition(c1, c2);
+    return c;
 }

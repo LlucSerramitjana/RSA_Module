@@ -5,7 +5,7 @@
   "main": "index.js",
   "browser": "./dist/esm/index.js",
   "exports": {
-    ".":{
+    ".": {
       "node": {
         "import": "./dist/esm/index.js",
         "require": "./dist/cjs/index.js",
@@ -26,6 +26,7 @@
     "typescript": "^5.0.2"
   },
   "dependencies": {
-    "bigint-crypto-utils": "^3.1.8"
+    "bigint-crypto-utils": "^3.1.8",
+    "paillier-bigint": "^3.4.1"
   }
 }
