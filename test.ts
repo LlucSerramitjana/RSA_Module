@@ -6,7 +6,9 @@ import { generatePaillierKeys, encryptPaillier, decryptPaillier, addPaillier } f
 async function test() {
   const bitlength = 2048
   const { publicKey, privateKey } = await generateMyRsaKeys(bitlength)
-
+  console.log('RSA keys generated:');
+  console.log('Public key:', publicKey);
+  console.log('Private key:', privateKey);
   // Test RSA encryption and decryption
   const plaintext = 123456n //número que vulguem encryptar/desencryptar
   const ciphertext = publicKey.encrypt(plaintext)

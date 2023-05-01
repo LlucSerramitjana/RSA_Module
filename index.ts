@@ -37,7 +37,7 @@ class MyRsaPrivateKey {
     return s
   }
 }
-interface KeyPair{
+export interface KeyPair{
   publicKey: MyRsaPublicKey
   privateKey: MyRsaPrivateKey
 }
