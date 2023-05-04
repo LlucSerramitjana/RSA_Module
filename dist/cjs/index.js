@@ -23,9 +23,10 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.addPaillier = exports.decryptPaillier = exports.encryptPaillier = exports.generatePaillierKeys = exports.generateMyRsaKeys = void 0;
+exports.addPaillier = exports.decryptPaillier = exports.encryptPaillier = exports.generatePaillierKeys = exports.generateMyRsaKeys = exports.MyRsaPublicKey = void 0;
 const bcu = __importStar(require("bigint-crypto-utils"));
 const paillier = __importStar(require("paillier-bigint"));
+const bc = __importStar(require("bigint-conversion"));
 class MyRsaPublicKey {
     constructor(e, n) {
         this.e = e;
@@ -39,7 +40,19 @@ class MyRsaPublicKey {
         const m = bcu.modPow(s, this.e, this.n);
         return m;
     }
+    toJSON() {
+        return {
+            e: bc.bigintToBase64(this.e),
+            n: bc.bigintToBase64(this.n)
+        };
+    }
+    static fromJSON(jsonKey) {
+        const e = bc.base64ToBigint(jsonKey.e);
+        const n = bc.base64ToBigint(jsonKey.n);
+        return new MyRsaPublicKey(e, n);
+    }
 }
+exports.MyRsaPublicKey = MyRsaPublicKey;
 class MyRsaPrivateKey {
     constructor(d, n) {
         this.d = d;
@@ -52,6 +65,17 @@ class MyRsaPrivateKey {
     sign(m) {
         const s = bcu.modPow(m, this.d, this.n);
         return s;
+    }
+    toJSON() {
+        return {
+            d: bc.bigintToBase64(this.d),
+            n: bc.bigintToBase64(this.n)
+        };
+    }
+    static fromJSON(jsonKey) {
+        const d = bc.base64ToBigint(jsonKey.d);
+        const n = bc.base64ToBigint(jsonKey.n);
+        return new MyRsaPublicKey(d, n);
     }
 }
 async function generateMyRsaKeys(bitlength) {

@@ -1,7 +1,13 @@
 import * as bcu from 'bigint-crypto-utils'
 import * as paillier from 'paillier-bigint'
+import * as bc from 'bigint-conversion'
 
-class MyRsaPublicKey {
+export interface MyRsaJsonPublicKey {
+  e: string // base64
+  n: string // base64
+}
+
+export class MyRsaPublicKey {
   e: bigint
   n: bigint
 
@@ -18,8 +24,21 @@ class MyRsaPublicKey {
     const m = bcu.modPow(s, this.e, this.n)
     return m
   }
+
+  toJSON (): MyRsaJsonPublicKey {
+    return {
+      e: bc.bigintToBase64(this.e),
+      n: bc.bigintToBase64(this.n)
+    }
+  }
+
+  static fromJSON(jsonKey: MyRsaJsonPublicKey) {
+    const e = bc.base64ToBigint(jsonKey.e)
+    const n = bc.base64ToBigint(jsonKey.n)
+    return new MyRsaPublicKey(e, n)
+  }
 }
-class MyRsaPrivateKey {
+export class MyRsaPrivateKey {
   d: bigint
   n: bigint
 
@@ -35,6 +54,19 @@ class MyRsaPrivateKey {
   sign (m: bigint): bigint {
     const s = bcu.modPow(m, this.d, this.n)
     return s
+  }
+  
+  toJSON () {
+    return {
+      d: bc.bigintToBase64(this.d),
+      n: bc.bigintToBase64(this.n)
+    }
+  }
+
+  static fromJSON(jsonKey: any) {
+    const d = bc.base64ToBigint(jsonKey.d)
+    const n = bc.base64ToBigint(jsonKey.n)
+    return new MyRsaPublicKey(d, n)
   }
 }
 export interface KeyPair{
@@ -54,6 +86,8 @@ export async function generateMyRsaKeys (bitlength: number): Promise<KeyPair> {
     privateKey: new MyRsaPrivateKey(d, n)
   }
 }
+
+
 interface PaillierKeyPair {
   publicKey: paillier.PublicKey,
   privateKey: paillier.PrivateKey

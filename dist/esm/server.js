@@ -1,65 +1,71 @@
 import express from 'express';
 import { generateMyRsaKeys } from './index';
-import { generatePaillierKeys, encryptPaillier, decryptPaillier, addPaillier } from './index';
-import { PublicKey as PaillierPublicKey } from 'paillier-bigint';
 const app = express();
 const port = 3000;
-app.get('/paillier-keys', async (req, res) => {
-    const keys = await generatePaillierKeys(1024);
-    res.json(keys);
+const bitLength = 2048;
+const keysPromise = generateMyRsaKeys(bitLength);
+app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, PUT, POST, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Content-Length, X-Requested-With');
+    next();
 });
-app.get('/paillier-encrypt', async (req, res) => {
-    const m = BigInt(req.query.m);
-    const publicKey = new PaillierPublicKey(BigInt(req.query.n), BigInt(req.query.g));
-    const c = await encryptPaillier(m, publicKey);
-    res.json({ c: c.toString() });
-});
-app.get('/paillier-decrypt', async (req, res) => {
-    const c = BigInt(req.query.c);
-    const keyPair = await generatePaillierKeys(1024);
-    const privateKey = keyPair.privateKey;
-    const m = await decryptPaillier(c, keyPair.publicKey, privateKey);
-    res.json({ m: m.toString() });
-});
-app.get('/paillier-add', async (req, res) => {
-    const c1 = BigInt(req.query.c1);
-    const c2 = BigInt(req.query.c2);
-    const publicKey = new PaillierPublicKey(BigInt(req.query.n), BigInt(req.query.g));
-    const c = await addPaillier(c1, c2, publicKey);
-    res.json({ c: c.toString() });
-});
-app.get('/rsa-keys', async (req, res) => {
-    const bitlength = Number(req.query.bitlength);
-    const keys = await generateMyRsaKeys(bitlength);
+// Generem les claus RSA
+app.get('/publicKey', async (req, res) => {
+    const keyPair = await keysPromise;
+    res.json(keyPair.publicKey.toJSON());
+    console.log('Generating RSA keys...');
+    /*const bitlength = 2048;
+    const { publicKey, privateKey } = await generateMyRsaKeys(bitlength);
+    console.log('RSA keys generated:');
+    console.log('Public key:', publicKey);
+    console.log('Private key:', privateKey);*/
+    console.log('KeyPair:', keyPair);
     res.json({
         publicKey: {
-            e: keys.publicKey.e.toString(),
-            n: keys.publicKey.n.toString()
-        },
-        privateKey: {
-            d: keys.privateKey.d.toString(),
-            n: keys.privateKey.n.toString()
+            e: keyPair.toString()
         }
     });
 });
-app.get('/rsa-encrypt', async (req, res) => {
-    const m = BigInt(req.query.m);
-    const { publicKey } = await generateMyRsaKeys(1024);
-    const c = publicKey.encrypt(m);
-    res.json({ c: c.toString() });
+//encriptar
+/*app.post('/encrypt', async (req, res) => {
+  const { message, e, n } = req.body || {};
+
+  if (!message || !e || !n) {
+    return res.status(400).json({ error: 'Invalid request body' });
+  }
+
+  const publicKey = MyRsaPublicKey.fromJSON(jsonKey);
+  const encrypted = publicKey.encrypt(BigInt(message));
+  res.json({ encrypted: encrypted.toString() });
 });
-app.get('/rsa-decrypt', async (req, res) => {
-    const c = BigInt(req.query.c);
-    const { privateKey } = await generateMyRsaKeys(1024);
-    const m = privateKey.decrypt(c);
-    res.json({ m: m.toString() });
+//decrypt
+app.post('/decrypt', async (req, res) => {
+  const { ciphertext, key } = req.body;
+  const privateKey = new MyRsaPrivateKey(BigInt(key.d), BigInt(key.n));
+  const decrypted = privateKey.decrypt(BigInt(ciphertext));
+  res.json({ decrypted: decrypted.toString() });
 });
-app.get('/rsa-sign', async (req, res) => {
-    const m = BigInt(req.query.m);
-    const { privateKey } = await generateMyRsaKeys(1024);
-    const s = privateKey.sign(m);
-    res.json({ s: s.toString() });
+//sign
+app.post('/sign', async (req, res) => {
+  const { message, key } = req.body;
+  const privateKey = new MyRsaPrivateKey(BigInt(key.d), BigInt(key.n));
+  const signature = privateKey.sign(BigInt(message));
+  res.json({ signature: signature.toString() });
 });
+//verify
+app.get('/verify', async (req, res) => {
+  const message = BigInt(req.query.message);
+  const signature = BigInt(req.query.signature);
+  const publicKey = new MyRsaPublicKey(BigInt(req.query.e), BigInt(req.query.n));
+  const verified = publicKey.verify(signature);
+  res.json({
+    message: message.toString(),
+    signature: signature.toString(),
+    publicKey: publicKey.toString(),
+    verified: (verified === message)
+  });
+});*/
 app.listen(port, () => {
-    console.log(`Server running at http://localhost:${port}`);
+    console.log(`listening on port ${port}`);
 });

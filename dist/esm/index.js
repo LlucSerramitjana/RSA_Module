@@ -1,6 +1,7 @@
 import * as bcu from 'bigint-crypto-utils';
 import * as paillier from 'paillier-bigint';
-class MyRsaPublicKey {
+import * as bc from 'bigint-conversion';
+export class MyRsaPublicKey {
     constructor(e, n) {
         this.e = e;
         this.n = n;
@@ -12,6 +13,17 @@ class MyRsaPublicKey {
     verify(s) {
         const m = bcu.modPow(s, this.e, this.n);
         return m;
+    }
+    toJSON() {
+        return {
+            e: bc.bigintToBase64(this.e),
+            n: bc.bigintToBase64(this.n)
+        };
+    }
+    static fromJSON(jsonKey) {
+        const e = bc.base64ToBigint(jsonKey.e);
+        const n = bc.base64ToBigint(jsonKey.n);
+        return new MyRsaPublicKey(e, n);
     }
 }
 class MyRsaPrivateKey {
@@ -26,6 +38,17 @@ class MyRsaPrivateKey {
     sign(m) {
         const s = bcu.modPow(m, this.d, this.n);
         return s;
+    }
+    toJSON() {
+        return {
+            d: bc.bigintToBase64(this.d),
+            n: bc.bigintToBase64(this.n)
+        };
+    }
+    static fromJSON(jsonKey) {
+        const d = bc.base64ToBigint(jsonKey.d);
+        const n = bc.base64ToBigint(jsonKey.n);
+        return new MyRsaPublicKey(d, n);
     }
 }
 export async function generateMyRsaKeys(bitlength) {

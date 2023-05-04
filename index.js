@@ -36,9 +36,10 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 exports.__esModule = true;
-exports.addPaillier = exports.decryptPaillier = exports.encryptPaillier = exports.generatePaillierKeys = exports.generateMyRsaKeys = void 0;
+exports.addPaillier = exports.decryptPaillier = exports.encryptPaillier = exports.generatePaillierKeys = exports.generateMyRsaKeys = exports.MyRsaPublicKey = void 0;
 var bcu = require("bigint-crypto-utils");
 var paillier = require("paillier-bigint");
+var bc = require("bigint-conversion");
 var MyRsaPublicKey = /** @class */ (function () {
     function MyRsaPublicKey(e, n) {
         this.e = e;
@@ -52,8 +53,20 @@ var MyRsaPublicKey = /** @class */ (function () {
         var m = bcu.modPow(s, this.e, this.n);
         return m;
     };
+    MyRsaPublicKey.prototype.toJSON = function () {
+        return {
+            e: bc.bigintToBase64(this.e),
+            n: bc.bigintToBase64(this.n)
+        };
+    };
+    MyRsaPublicKey.fromJSON = function (jsonKey) {
+        var e = bc.base64ToBigint(jsonKey.e);
+        var n = bc.base64ToBigint(jsonKey.n);
+        return new MyRsaPublicKey(e, n);
+    };
     return MyRsaPublicKey;
 }());
+exports.MyRsaPublicKey = MyRsaPublicKey;
 var MyRsaPrivateKey = /** @class */ (function () {
     function MyRsaPrivateKey(d, n) {
         this.d = d;
@@ -66,6 +79,17 @@ var MyRsaPrivateKey = /** @class */ (function () {
     MyRsaPrivateKey.prototype.sign = function (m) {
         var s = bcu.modPow(m, this.d, this.n);
         return s;
+    };
+    MyRsaPrivateKey.prototype.toJSON = function () {
+        return {
+            d: bc.bigintToBase64(this.d),
+            n: bc.bigintToBase64(this.n)
+        };
+    };
+    MyRsaPrivateKey.fromJSON = function (jsonKey) {
+        var d = bc.base64ToBigint(jsonKey.d);
+        var n = bc.base64ToBigint(jsonKey.n);
+        return new MyRsaPublicKey(d, n);
     };
     return MyRsaPrivateKey;
 }());
