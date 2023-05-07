@@ -23,7 +23,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.addPaillier = exports.decryptPaillier = exports.encryptPaillier = exports.generatePaillierKeys = exports.generateMyRsaKeys = exports.MyRsaPublicKey = void 0;
+exports.addPaillier = exports.decryptPaillier = exports.encryptPaillier = exports.generatePaillierKeys = exports.generateMyRsaKeys = exports.MyRsaPrivateKey = exports.MyRsaPublicKey = void 0;
 const bcu = __importStar(require("bigint-crypto-utils"));
 const paillier = __importStar(require("paillier-bigint"));
 const bc = __importStar(require("bigint-conversion"));
@@ -78,6 +78,7 @@ class MyRsaPrivateKey {
         return new MyRsaPublicKey(d, n);
     }
 }
+exports.MyRsaPrivateKey = MyRsaPrivateKey;
 async function generateMyRsaKeys(bitlength) {
     const p = await bcu.prime(Math.floor(bitlength / 2));
     const q = await bcu.prime(Math.floor(bitlength / 2) + 1);

@@ -25,12 +25,14 @@ app.get('/publicKey', async (req, res) => {
   console.log('RSA keys generated:');
   console.log('Public key:', publicKey);
   console.log('Private key:', privateKey);*/
-  console.log('KeyPair:', keyPair )
-  res.json({
+  console.log('KeyPair:', keyPair.publicKey)
+  console.log('KeyPair:', keyPair.publicKey.toJSON() )
+
+  /*res.json({
     publicKey: {
       e: keyPair.toString()
     }
-  });
+  });*/
 });
 //decrypt
 app.post('/decrypt', async (req, res) => {
