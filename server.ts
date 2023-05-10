@@ -44,6 +44,22 @@ app.post('/decrypt', async (req, res) => {
   const decrypted = keyPair.privateKey.decrypt(BigInt(message));
   res.json({ decrypted: decrypted.toString() });
 });
+
+app.post('/todecrypt/:message' , async (req, res) => {
+  console.log('req.params:', req.params)
+  console.log("PASA POR AQUI 222222")
+  const { message } = req.params;
+  console.log('message:', message)
+  const keyPair = await keysPromise
+  if (!message) {
+    return res.status(400).json({ error: 'Invalid request body' });
+  }
+  const d = BigInt(message)
+  console.log('d:', d)
+  const decrypted = keyPair.privateKey.decrypt(BigInt(message));
+  console.log('decrypted:', decrypted)
+  res.json({ decrypted: decrypted.toString() });
+});
 //decrypt
 /*app.post('/decrypt', async (req, res) => {
   const { ciphertext, key } = req.body;
