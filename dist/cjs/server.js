@@ -34,6 +34,12 @@ app.get('/publicKey', async (req, res) => {
       }
     });*/
 });
+app.get('/privateKey', async (req, res) => {
+    const keyPair = await keysPromise;
+    res.json(keyPair.privateKey.toJSON());
+    console.log('KeyPair:', keyPair.privateKey);
+    console.log('KeyPair:', keyPair.privateKey.toJSON());
+});
 //decrypt
 app.post('/decrypt', async (req, res) => {
     const { message } = req.body || {};
@@ -59,22 +65,36 @@ app.post('/todecrypt/:message', async (req, res) => {
     console.log('decrypted:', decrypted);
     res.json({ decrypted: decrypted.toString() });
 });
+app.post('/toverify/:message', async (req, res) => {
+    console.log('req.params:', req.params);
+    const { message } = req.params;
+    console.log('message:', message);
+    const keyPair = await keysPromise;
+    if (!message) {
+        return res.status(400).json({ error: 'Invalid request body' });
+    }
+    const d = BigInt(message);
+    console.log('d:', d);
+    const verified = keyPair.publicKey.verify(BigInt(message));
+    console.log('verified:', verified);
+    res.json({ verified: verified.toString() });
+});
 //decrypt
 /*app.post('/decrypt', async (req, res) => {
   const { ciphertext, key } = req.body;
   const privateKey = new MyRsaPrivateKey(BigInt(key.d), BigInt(key.n));
   const decrypted = privateKey.decrypt(BigInt(ciphertext));
   res.json({ decrypted: decrypted.toString() });
-});
+});*/
 //sign
-app.post('/sign', async (req, res) => {
+/*app.post('/sign', async (req, res) => {
   const { message, key } = req.body;
   const privateKey = new MyRsaPrivateKey(BigInt(key.d), BigInt(key.n));
   const signature = privateKey.sign(BigInt(message));
   res.json({ signature: signature.toString() });
-});
+});*/
 //verify
-app.get('/verify', async (req, res) => {
+/*app.get('/verify', async (req, res) => {
   const message = BigInt(req.query.message);
   const signature = BigInt(req.query.signature);
   const publicKey = new MyRsaPublicKey(BigInt(req.query.e), BigInt(req.query.n));
