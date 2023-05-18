@@ -1,10 +1,34 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const index_1 = require("./index");
+const bc = __importStar(require("bigint-conversion"));
 //node .\dist\cjs\server.js ----------------------------> comanda per arrancar el servidor
 const app = (0, express_1.default)();
 const port = 3000;
@@ -65,20 +89,43 @@ app.post('/todecrypt/:message', async (req, res) => {
     console.log('decrypted:', decrypted);
     res.json({ decrypted: decrypted.toString() });
 });
-app.post('/toverify/:message', async (req, res) => {
+app.post('/sign/:message', async (req, res) => {
     console.log('req.params:', req.params);
     const { message } = req.params;
     console.log('message:', message);
     const keyPair = await keysPromise;
+    console.log("privateKey:", keyPair.privateKey);
     if (!message) {
         return res.status(400).json({ error: 'Invalid request body' });
     }
-    const d = BigInt(message);
-    console.log('d:', d);
-    const verified = keyPair.publicKey.verify(BigInt(message));
-    console.log('verified:', verified);
-    res.json({ verified: verified.toString() });
+    const decrypted = keyPair.privateKey.decrypt(BigInt(message));
+    //const privateKey = keyPair.privateKey;
+    //console.log('privateKey:', privateKey);
+    const signature = keyPair.privateKey.sign(BigInt(message));
+    const signature2 = bc.bigintToBase64(signature);
+    console.log('signature:', signature2);
+    res.json({ signature: signature2.toString() });
 });
+/*app.post('/sign', async (req, res) => {
+  const { message, key } = req.body;
+  const privateKey = new MyRsaPrivateKey(BigInt(key.d), BigInt(key.n));
+  const signature = privateKey.sign(BigInt(message));
+  res.json({ signature: signature.toString() });
+});*/
+/*app.post('/toverify/:message' , async (req, res) => {
+  console.log('req.params:', req.params)
+  const { message } = req.params;
+  console.log('message:', message)
+  const keyPair = await keysPromise
+  if (!message) {
+    return res.status(400).json({ error: 'Invalid request body' });
+  }
+  const d = BigInt(message)
+  console.log('d:', d)
+  const verified = keyPair.publicKey.verify(BigInt(message));
+  console.log('verified:', verified)
+  res.json({ verified: verified.toString() });
+});*/
 //decrypt
 /*app.post('/decrypt', async (req, res) => {
   const { ciphertext, key } = req.body;
@@ -87,12 +134,6 @@ app.post('/toverify/:message', async (req, res) => {
   res.json({ decrypted: decrypted.toString() });
 });*/
 //sign
-/*app.post('/sign', async (req, res) => {
-  const { message, key } = req.body;
-  const privateKey = new MyRsaPrivateKey(BigInt(key.d), BigInt(key.n));
-  const signature = privateKey.sign(BigInt(message));
-  res.json({ signature: signature.toString() });
-});*/
 //verify
 /*app.get('/verify', async (req, res) => {
   const message = BigInt(req.query.message);

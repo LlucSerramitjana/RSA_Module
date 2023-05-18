@@ -1,6 +1,8 @@
 import express from 'express';
 import { MyRsaPublicKey, KeyPair, generateMyRsaKeys } from './index';
+import { MyRsaPrivateKey } from './index';
 import { PrivateKey } from 'paillier-bigint';
+import * as bc from 'bigint-conversion'
 //node .\dist\cjs\server.js ----------------------------> comanda per arrancar el servidor
 const app = express();
 const port = 3000;
@@ -67,7 +69,32 @@ app.post('/todecrypt/:message' , async (req, res) => {
   res.json({ decrypted: decrypted.toString() });
 });
 
-app.post('/toverify/:message' , async (req, res) => {
+app.post('/sign/:message' , async (req, res) => {
+  console.log('req.params:', req.params)
+  const { message } = req.params;
+  
+  console.log('message:', message)
+  const keyPair = await keysPromise
+  console.log("privateKey:", keyPair.privateKey)
+  if (!message) {
+    return res.status(400).json({ error: 'Invalid request body' });
+  }
+  const decrypted = keyPair.privateKey.decrypt(BigInt(message));
+  //const privateKey = keyPair.privateKey;
+  //console.log('privateKey:', privateKey);
+  const signature = keyPair.privateKey.sign(BigInt(message));
+  const signature2 = bc.bigintToBase64(signature);
+  console.log('signature:', signature2);
+  res.json({ signature: signature2.toString() });
+  
+});
+/*app.post('/sign', async (req, res) => {
+  const { message, key } = req.body;
+  const privateKey = new MyRsaPrivateKey(BigInt(key.d), BigInt(key.n));
+  const signature = privateKey.sign(BigInt(message));
+  res.json({ signature: signature.toString() });
+});*/
+/*app.post('/toverify/:message' , async (req, res) => {
   console.log('req.params:', req.params)
   const { message } = req.params;
   console.log('message:', message)
@@ -80,7 +107,7 @@ app.post('/toverify/:message' , async (req, res) => {
   const verified = keyPair.publicKey.verify(BigInt(message));
   console.log('verified:', verified)
   res.json({ verified: verified.toString() });
-});
+});*/
 
 //decrypt
 /*app.post('/decrypt', async (req, res) => {
@@ -89,13 +116,7 @@ app.post('/toverify/:message' , async (req, res) => {
   const decrypted = privateKey.decrypt(BigInt(ciphertext));
   res.json({ decrypted: decrypted.toString() });
 });*/
-//sign
-/*app.post('/sign', async (req, res) => {
-  const { message, key } = req.body;
-  const privateKey = new MyRsaPrivateKey(BigInt(key.d), BigInt(key.n));
-  const signature = privateKey.sign(BigInt(message));
-  res.json({ signature: signature.toString() });
-});*/
+
 //verify
 /*app.get('/verify', async (req, res) => {
   const message = BigInt(req.query.message);
