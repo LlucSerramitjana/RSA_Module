@@ -2,7 +2,8 @@ import express from 'express';
 import { MyRsaPublicKey, KeyPair, generateMyRsaKeys } from './index';
 import { MyRsaPrivateKey } from './index';
 import { PrivateKey } from 'paillier-bigint';
-import * as bc from 'bigint-conversion'
+import * as bc from 'bigint-conversion';
+import * as bcu from 'bigint-crypto-utils';
 //node .\dist\cjs\server.js ----------------------------> comanda per arrancar el servidor
 const app = express();
 const port = 3000;
@@ -79,7 +80,6 @@ app.post('/sign/:message' , async (req, res) => {
   if (!message) {
     return res.status(400).json({ error: 'Invalid request body' });
   }
-  const decrypted = keyPair.privateKey.decrypt(BigInt(message));
   //const privateKey = keyPair.privateKey;
   //console.log('privateKey:', privateKey);
   const signature = keyPair.privateKey.sign(BigInt(message));
@@ -87,6 +87,38 @@ app.post('/sign/:message' , async (req, res) => {
   console.log('signature:', signature2);
   res.json({ signature: signature2.toString() });
   
+});
+
+app.post('/tounblind/:message/:pubKeyn/:pubKeye/:blindingFactor' , async (req, res) => {
+  console.log('req.params:', req.params)
+  const { message } = req.params;
+  const { pubKeyn } = req.params;
+  const { pubKeye } = req.params;
+  const { blindingFactor } = req.params;
+  console.log('message:', message);
+  console.log('npubKey:', pubKeyn);
+  console.log('epubKey:', pubKeye);
+  console.log('blindingFactor:', blindingFactor);
+
+  const m = BigInt(message);
+  const n = BigInt(pubKeyn);
+  const e = BigInt(pubKeye);
+  const b = BigInt(blindingFactor);
+  console.log('m:', m);
+  console.log('n:', n);
+  console.log('e:', e);
+  console.log('b:', b);
+
+  const unblindedSignature = (m * bcu.modInv(b, n)) % e;
+  console.log('unblindedSignature:', unblindedSignature);
+
+  const publicKey = new MyRsaPublicKey(e, n);
+  console.log('publicKey:', publicKey);
+  
+  const blindVerified = publicKey.verify(unblindedSignature);
+  console.log('blindVerified:', blindVerified);
+  res.json({ blindVerified: blindVerified.toString() });
+
 });
 /*app.post('/sign', async (req, res) => {
   const { message, key } = req.body;

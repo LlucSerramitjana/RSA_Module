@@ -29,6 +29,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const index_1 = require("./index");
 const bc = __importStar(require("bigint-conversion"));
+const bcu = __importStar(require("bigint-crypto-utils"));
 //node .\dist\cjs\server.js ----------------------------> comanda per arrancar el servidor
 const app = (0, express_1.default)();
 const port = 3000;
@@ -106,6 +107,36 @@ app.post('/sign/:message', async (req, res) => {
     console.log('signature:', signature2);
     res.json({ signature: signature2.toString() });
 });
+app.post('/tounblind/:message/:pubKeyn/:pubKeye/:blindingFactor', async (req, res) => {
+    console.log('req.params:', req.params);
+    const { message } = req.params;
+    const { pubKeyn } = req.params;
+    const { pubKeye } = req.params;
+    const { blindingFactor } = req.params;
+    console.log('message:', message);
+    console.log('npubKey:', pubKeyn);
+    console.log('epubKey:', pubKeye);
+    console.log('blindingFactor:', blindingFactor);
+    const m = BigInt(message);
+    const n = BigInt(pubKeyn);
+    const e = BigInt(pubKeye);
+    const b = BigInt(blindingFactor);
+    console.log('m:', m);
+    console.log('n:', n);
+    console.log('e:', e);
+    console.log('b:', b);
+    const unblindedSignature = (m * bcu.modInv(b, n)) % e;
+    const u = BigInt(unblindedSignature);
+    console.log('unblindedSignature base64:', u);
+    //const unblindedSignature = (blindedSignature * bcu.modInv(blindingFactor, publicKey.n)) % publicKey.n;
+    //const blindVerified = publicKey.verify(unblindedSignature);
+    console.log('unblindedSignature:', unblindedSignature);
+    const publicKey = new index_1.MyRsaPublicKey(e, n);
+    console.log('publicKey:', publicKey);
+    const blindVerified = publicKey.verify(unblindedSignature);
+    console.log('blindVerified:', blindVerified);
+    res.json({ blindVerified: blindVerified.toString() });
+});
 /*app.post('/sign', async (req, res) => {
   const { message, key } = req.body;
   const privateKey = new MyRsaPrivateKey(BigInt(key.d), BigInt(key.n));
@@ -133,7 +164,6 @@ app.post('/sign/:message', async (req, res) => {
   const decrypted = privateKey.decrypt(BigInt(ciphertext));
   res.json({ decrypted: decrypted.toString() });
 });*/
-//sign
 //verify
 /*app.get('/verify', async (req, res) => {
   const message = BigInt(req.query.message);
