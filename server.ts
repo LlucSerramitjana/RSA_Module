@@ -1,15 +1,22 @@
 import express from 'express';
-import { MyRsaPublicKey, KeyPair, generateMyRsaKeys } from './index';
+import { MyRsaPublicKey, KeyPair, generateMyRsaKeys, generatePaillierKeys } from './index';
 import { MyRsaPrivateKey } from './index';
 import { PrivateKey } from 'paillier-bigint';
 import * as bc from 'bigint-conversion';
 import * as bcu from 'bigint-crypto-utils';
+import * as paillierBigint from 'paillier-bigint'
+import { PaillierKeyPair } from './index';
+
 //node .\dist\cjs\server.js ----------------------------> comanda per arrancar el servidor
 const app = express();
 const port = 3000;
+const cors = require('cors');
+app.use(cors());
 
 const bitLength = 2048;
 const keysPromise: Promise<KeyPair> = generateMyRsaKeys(bitLength)
+const paillierKeysPromise: Promise<PaillierKeyPair> = generatePaillierKeys(bitLength)
+
 
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
@@ -37,6 +44,17 @@ app.get('/publicKey', async (req, res) => {
     }
   });*/
 });
+
+app.get('/publicKeyPallier', async (req, res) => {
+
+  const pubKey = await paillierKeysPromise
+  res.json(pubKey.publicKey.toJSON())
+  //const { publicKey, privateKey } = await paillierBigint.generateRandomKeys(3072)
+  console.log('Public key:', pubKey.publicKey);
+
+});
+
+
 app.get('/privateKey', async (req, res) => {
   const keyPair = await keysPromise
   res.json(keyPair.privateKey.toJSON())
@@ -89,35 +107,39 @@ app.post('/sign/:message' , async (req, res) => {
   
 });
 
-app.post('/tounblind/:message/:pubKeyn/:pubKeye/:blindingFactor' , async (req, res) => {
+app.post('/tounblind/:message' , async (req, res) => {
   console.log('req.params:', req.params)
   const { message } = req.params;
-  const { pubKeyn } = req.params;
-  const { pubKeye } = req.params;
-  const { blindingFactor } = req.params;
   console.log('message:', message);
-  console.log('npubKey:', pubKeyn);
-  console.log('epubKey:', pubKeye);
-  console.log('blindingFactor:', blindingFactor);
 
   const m = BigInt(message);
-  const n = BigInt(pubKeyn);
-  const e = BigInt(pubKeye);
-  const b = BigInt(blindingFactor);
+
   console.log('m:', m);
-  console.log('n:', n);
-  console.log('e:', e);
-  console.log('b:', b);
+  const keyPair = await keysPromise
+  console.log("privateKey:", keyPair.privateKey)
 
-  const unblindedSignature = (m * bcu.modInv(b, n)) % e;
-  console.log('unblindedSignature:', unblindedSignature);
+  const blindedSignature = keyPair.privateKey.sign(m); 
+  console.log('blindedSignature:', blindedSignature);
 
-  const publicKey = new MyRsaPublicKey(e, n);
-  console.log('publicKey:', publicKey);
+  res.json({ blindedSignature: blindedSignature.toString() });
+
+});
+
+app.post('/messageToUnpaillier/:message' , async (req, res) => {
+  console.log('req.params:', req.params)
+  const { message } = req.params;
+  console.log('message:', message);
   
-  const blindVerified = publicKey.verify(unblindedSignature);
-  console.log('blindVerified:', blindVerified);
-  res.json({ blindVerified: blindVerified.toString() });
+  const keysPaillier = await paillierKeysPromise
+
+  const encryptedMul = BigInt(message);
+
+  const messagefinal = keysPaillier.privateKey.decrypt(encryptedMul);
+
+  console.log('messagefinal:', messagefinal);
+
+  res.json({ messagefinal: messagefinal.toString() });
+
 
 });
 /*app.post('/sign', async (req, res) => {

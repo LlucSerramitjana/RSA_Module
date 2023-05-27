@@ -64,29 +64,29 @@ async function test() {
     // Test Paillier encryption and decryption
     const paillierPlaintext1 = 123456n;
     const paillierPlaintext2 = 789012n;
-    const paillierCiphertext1 = await (0, index_2.encryptPaillier)(paillierPlaintext1, paillierPublicKey);
-    const paillierCiphertext2 = await (0, index_2.encryptPaillier)(paillierPlaintext2, paillierPublicKey);
-    const paillierDecryptedtext1 = await (0, index_2.decryptPaillier)(paillierCiphertext1, paillierPublicKey, paillierPrivateKey);
-    const paillierDecryptedtext2 = await (0, index_2.decryptPaillier)(paillierCiphertext2, paillierPublicKey, paillierPrivateKey);
-    console.log('Paillier Plaintext 1:', paillierPlaintext1.toString());
-    console.log('Paillier Plaintext 2:', paillierPlaintext2.toString());
-    console.log('Paillier Ciphertext 1:', paillierCiphertext1.toString());
-    console.log('Paillier Ciphertext 2:', paillierCiphertext2.toString());
-    console.log('Paillier Decryptedtext 1:', paillierDecryptedtext1.toString());
-    console.log('Paillier Decryptedtext 2:', paillierDecryptedtext2.toString());
+    // const paillierCiphertext1 = await encryptPaillier(paillierPlaintext1, paillierPublicKey);
+    // const paillierCiphertext2 = await encryptPaillier(paillierPlaintext2, paillierPublicKey);
+    // const paillierDecryptedtext1 = await decryptPaillier(paillierCiphertext1, paillierPublicKey, paillierPrivateKey);
+    // const paillierDecryptedtext2 = await decryptPaillier(paillierCiphertext2, paillierPublicKey, paillierPrivateKey);
+    // console.log('Paillier Plaintext 1:', paillierPlaintext1.toString());
+    // console.log('Paillier Plaintext 2:', paillierPlaintext2.toString());
+    // console.log('Paillier Ciphertext 1:', paillierCiphertext1.toString());
+    // console.log('Paillier Ciphertext 2:', paillierCiphertext2.toString());
+    // console.log('Paillier Decryptedtext 1:', paillierDecryptedtext1.toString());
+    // console.log('Paillier Decryptedtext 2:', paillierDecryptedtext2.toString());
     // Test Paillier addition
     const paillierPlaintext3 = 13579n;
-    const paillierCiphertext3 = await (0, index_2.encryptPaillier)(paillierPlaintext3, paillierPublicKey);
-    const paillierSum1 = await (0, index_2.addPaillier)(paillierCiphertext1, paillierCiphertext2, paillierPublicKey);
-    const paillierSum2 = await (0, index_2.addPaillier)(paillierSum1, paillierCiphertext3, paillierPublicKey);
-    const paillierDecryptedSum1 = await (0, index_2.decryptPaillier)(paillierSum1, paillierPublicKey, paillierPrivateKey);
-    const paillierDecryptedSum2 = await (0, index_2.decryptPaillier)(paillierSum2, paillierPublicKey, paillierPrivateKey);
-    console.log('Paillier Plaintext 3:', paillierPlaintext3.toString());
-    console.log('Paillier Ciphertext 3:', paillierCiphertext3.toString());
-    console.log('Paillier Sum 1:', paillierSum1.toString());
-    console.log('Paillier Sum 2:', paillierSum2.toString());
-    console.log('Paillier Decrypted Sum 1:', paillierDecryptedSum1.toString());
-    console.log('Paillier Decrypted Sum 2:', paillierDecryptedSum2.toString());
+    //const paillierCiphertext3 = await encryptPaillier(paillierPlaintext3, paillierPublicKey);
+    // const paillierSum1 = await addPaillier(paillierCiphertext1, paillierCiphertext2, paillierPublicKey);
+    // const paillierSum2 = await addPaillier(paillierSum1, paillierCiphertext3, paillierPublicKey);
+    // const paillierDecryptedSum1 = await decryptPaillier(paillierSum1, paillierPublicKey, paillierPrivateKey);
+    // const paillierDecryptedSum2 = await decryptPaillier(paillierSum2, paillierPublicKey, paillierPrivateKey);
+    // console.log('Paillier Plaintext 3:', paillierPlaintext3.toString());
+    // console.log('Paillier Ciphertext 3:', paillierCiphertext3.toString());
+    // console.log('Paillier Sum 1:', paillierSum1.toString());
+    // console.log('Paillier Sum 2:', paillierSum2.toString());
+    // console.log('Paillier Decrypted Sum 1:', paillierDecryptedSum1.toString());
+    // console.log('Paillier Decrypted Sum 2:', paillierDecryptedSum2.toString());
 }
 test();
 //npx ts-node test.ts

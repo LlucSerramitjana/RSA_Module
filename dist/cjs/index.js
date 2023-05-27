@@ -23,7 +23,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.addPaillier = exports.decryptPaillier = exports.encryptPaillier = exports.generatePaillierKeys = exports.generateMyRsaKeys = exports.MyRsaPrivateKey = exports.MyRsaPublicKey = void 0;
+exports.addPaillier = exports.decryptPaillier = exports.encryptPaillier = exports.generatePaillierKeys = exports.MyPaillierPublicKey = exports.generateMyRsaKeys = exports.MyRsaPrivateKey = exports.MyRsaPublicKey = void 0;
 const bcu = __importStar(require("bigint-crypto-utils"));
 const paillier = __importStar(require("paillier-bigint"));
 const bc = __importStar(require("bigint-conversion"));
@@ -92,10 +92,98 @@ async function generateMyRsaKeys(bitlength) {
     };
 }
 exports.generateMyRsaKeys = generateMyRsaKeys;
+class MyPaillierPublicKey {
+    constructor(n, g) {
+        this.n = n;
+        this._n2 = this.n ** 2n;
+        this.g = g;
+    }
+    get bitLength() {
+        return bcu.bitLength(this.n);
+    }
+    encrypt(m, r) {
+        if (r === undefined) {
+            do {
+                r = bcu.randBetween(this.n);
+            } while (bcu.gcd(r, this.n) !== 1n);
+        }
+        return (bcu.modPow(this.g, m, this._n2) * bcu.modPow(r, this.n, this._n2)) % this._n2;
+    }
+    addition(...ciphertexts) {
+        return ciphertexts.reduce((sum, next) => sum * next % this._n2, 1n);
+    }
+    plaintextAddition(ciphertext, ...plaintexts) {
+        return plaintexts.reduce((sum, next) => sum * bcu.modPow(this.g, next, this._n2) % this._n2, ciphertext);
+    }
+    multiply(c, k) {
+        return bcu.modPow(c, k, this._n2);
+    }
+    toJSON() {
+        return {
+            n: bc.bigintToBase64(this.n),
+            _n2: bc.bigintToBase64(this._n2),
+            g: bc.bigintToBase64(this.g)
+        };
+    }
+    static fromJSON(jsonKey) {
+        const n = bc.base64ToBigint(jsonKey.n);
+        const g = bc.base64ToBigint(jsonKey.g);
+        return new MyPaillierPublicKey(n, g);
+    }
+}
+exports.MyPaillierPublicKey = MyPaillierPublicKey;
+class MyPaillierPrivateKey {
+    constructor(lambda, mu, publicKey, p, q) {
+        this.lambda = lambda;
+        this.mu = mu;
+        this._p = p;
+        this._q = q;
+        this.publicKey = publicKey;
+    }
+    get bitLength() {
+        return bcu.bitLength(this.publicKey.n);
+    }
+    get n() {
+        return this.publicKey.n;
+    }
+    decrypt(c) {
+        return (this.L(bcu.modPow(c, this.lambda, this.publicKey._n2), this.publicKey.n) * this.mu) % this.publicKey.n;
+    }
+    getRandomFactor(c) {
+        if (this.publicKey.g !== this.n + 1n)
+            throw RangeError('Cannot recover the random factor if publicKey.g != publicKey.n + 1. You should generate yout keys using the simple variant, e.g. generateRandomKeys(3072, true) )');
+        if (this._p === undefined || this._q === undefined) {
+            throw Error('Cannot get random factor without knowing p and q');
+        }
+        const m = this.decrypt(c);
+        const phi = (this._p - 1n) * (this._q - 1n);
+        const nInvModPhi = bcu.modInv(this.n, phi);
+        const c1 = c * (1n - m * this.n) % this.publicKey._n2;
+        return bcu.modPow(c1, nInvModPhi, this.n);
+    }
+    toJSON() {
+        return {
+            lambda: bc.bigintToBase64(this.lambda),
+            mu: bc.bigintToBase64(this.mu)
+        };
+    }
+    static fromJSON(jsonKey) {
+        const lambda = bc.base64ToBigint(jsonKey.lambda);
+        const mu = bc.base64ToBigint(jsonKey.mu);
+        const publicKey = MyPaillierPublicKey.fromJSON(jsonKey.publicKey);
+        const p = jsonKey.p ? bc.base64ToBigint(jsonKey.p) : undefined;
+        const q = jsonKey.q ? bc.base64ToBigint(jsonKey.q) : undefined;
+        return new MyPaillierPrivateKey(lambda, mu, publicKey, p, q);
+    }
+    L(a, n) {
+        return (a - 1n) / n;
+    }
+}
+exports.default = MyPaillierPrivateKey;
 async function generatePaillierKeys(bitlength) {
     const keys = await paillier.generateRandomKeysSync(bitlength);
     return {
-        publicKey: keys.publicKey,
+        publicKey: new MyPaillierPublicKey(keys.publicKey.n, keys.publicKey.g),
         privateKey: keys.privateKey
     };
 }

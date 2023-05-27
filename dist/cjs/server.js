@@ -29,12 +29,14 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const index_1 = require("./index");
 const bc = __importStar(require("bigint-conversion"));
-const bcu = __importStar(require("bigint-crypto-utils"));
 //node .\dist\cjs\server.js ----------------------------> comanda per arrancar el servidor
 const app = (0, express_1.default)();
 const port = 3000;
+const cors = require('cors');
+app.use(cors());
 const bitLength = 2048;
 const keysPromise = (0, index_1.generateMyRsaKeys)(bitLength);
+const paillierKeysPromise = (0, index_1.generatePaillierKeys)(bitLength);
 app.use((req, res, next) => {
     res.header('Access-Control-Allow-Origin', '*');
     res.header('Access-Control-Allow-Methods', 'GET, PUT, POST, DELETE, OPTIONS');
@@ -58,6 +60,12 @@ app.get('/publicKey', async (req, res) => {
         e: keyPair.toString()
       }
     });*/
+});
+app.get('/publicKeyPallier', async (req, res) => {
+    const pubKey = await paillierKeysPromise;
+    res.json(pubKey.publicKey.toJSON());
+    //const { publicKey, privateKey } = await paillierBigint.generateRandomKeys(3072)
+    console.log('Public key:', pubKey.publicKey);
 });
 app.get('/privateKey', async (req, res) => {
     const keyPair = await keysPromise;
@@ -99,7 +107,6 @@ app.post('/sign/:message', async (req, res) => {
     if (!message) {
         return res.status(400).json({ error: 'Invalid request body' });
     }
-    const decrypted = keyPair.privateKey.decrypt(BigInt(message));
     //const privateKey = keyPair.privateKey;
     //console.log('privateKey:', privateKey);
     const signature = keyPair.privateKey.sign(BigInt(message));
@@ -107,35 +114,27 @@ app.post('/sign/:message', async (req, res) => {
     console.log('signature:', signature2);
     res.json({ signature: signature2.toString() });
 });
-app.post('/tounblind/:message/:pubKeyn/:pubKeye/:blindingFactor', async (req, res) => {
+app.post('/tounblind/:message', async (req, res) => {
     console.log('req.params:', req.params);
     const { message } = req.params;
-    const { pubKeyn } = req.params;
-    const { pubKeye } = req.params;
-    const { blindingFactor } = req.params;
     console.log('message:', message);
-    console.log('npubKey:', pubKeyn);
-    console.log('epubKey:', pubKeye);
-    console.log('blindingFactor:', blindingFactor);
     const m = BigInt(message);
-    const n = BigInt(pubKeyn);
-    const e = BigInt(pubKeye);
-    const b = BigInt(blindingFactor);
     console.log('m:', m);
-    console.log('n:', n);
-    console.log('e:', e);
-    console.log('b:', b);
-    const unblindedSignature = (m * bcu.modInv(b, n)) % e;
-    const u = BigInt(unblindedSignature);
-    console.log('unblindedSignature base64:', u);
-    //const unblindedSignature = (blindedSignature * bcu.modInv(blindingFactor, publicKey.n)) % publicKey.n;
-    //const blindVerified = publicKey.verify(unblindedSignature);
-    console.log('unblindedSignature:', unblindedSignature);
-    const publicKey = new index_1.MyRsaPublicKey(e, n);
-    console.log('publicKey:', publicKey);
-    const blindVerified = publicKey.verify(unblindedSignature);
-    console.log('blindVerified:', blindVerified);
-    res.json({ blindVerified: blindVerified.toString() });
+    const keyPair = await keysPromise;
+    console.log("privateKey:", keyPair.privateKey);
+    const blindedSignature = keyPair.privateKey.sign(m);
+    console.log('blindedSignature:', blindedSignature);
+    res.json({ blindedSignature: blindedSignature.toString() });
+});
+app.post('/messageToUnpaillier/:message', async (req, res) => {
+    console.log('req.params:', req.params);
+    const { message } = req.params;
+    console.log('message:', message);
+    const keysPaillier = await paillierKeysPromise;
+    const encryptedMul = BigInt(message);
+    const messagefinal = keysPaillier.privateKey.decrypt(encryptedMul);
+    console.log('messagefinal:', messagefinal);
+    res.json({ messagefinal: messagefinal.toString() });
 });
 /*app.post('/sign', async (req, res) => {
   const { message, key } = req.body;
