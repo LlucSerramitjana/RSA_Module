@@ -1,17 +1,14 @@
-import express from 'express';
-import { MyRsaPublicKey, KeyPair, generateMyRsaKeys, generatePaillierKeys } from './index';
-import { MyRsaPrivateKey } from './index';
-import { PrivateKey } from 'paillier-bigint';
 import * as bc from 'bigint-conversion';
-import * as bcu from 'bigint-crypto-utils';
-import * as paillierBigint from 'paillier-bigint'
-import { PaillierKeyPair } from './index';
+import express from 'express';
+import { KeyPair, PaillierKeyPair, generateMyRsaKeys, generatePaillierKeys } from './index';
+
 
 //node .\dist\cjs\server.js ----------------------------> comanda per arrancar el servidor
 const app = express();
 const port = 3000;
 const cors = require('cors');
 app.use(cors());
+app.use(express.json());
 
 const bitLength = 2048;
 const keysPromise: Promise<KeyPair> = generateMyRsaKeys(bitLength)
@@ -29,27 +26,16 @@ app.use((req, res, next) => {
 app.get('/publicKey', async (req, res) => {
   const keyPair = await keysPromise
   res.json(keyPair.publicKey.toJSON())
-  //console.log('Generating RSA keys...');
-  /*const bitlength = 2048;
-  const { publicKey, privateKey } = await generateMyRsaKeys(bitlength);
-  console.log('RSA keys generated:');
-  console.log('Public key:', publicKey);
-  console.log('Private key:', privateKey);*/
+
   console.log('KeyPair:', keyPair.publicKey)
   console.log('KeyPair:', keyPair.publicKey.toJSON() )
 
-  /*res.json({
-    publicKey: {
-      e: keyPair.toString()
-    }
-  });*/
 });
 
 app.get('/publicKeyPallier', async (req, res) => {
 
   const pubKey = await paillierKeysPromise
   res.json(pubKey.publicKey.toJSON())
-  //const { publicKey, privateKey } = await paillierBigint.generateRandomKeys(3072)
   console.log('Public key:', pubKey.publicKey);
 
 });
@@ -98,8 +84,7 @@ app.post('/sign/:message' , async (req, res) => {
   if (!message) {
     return res.status(400).json({ error: 'Invalid request body' });
   }
-  //const privateKey = keyPair.privateKey;
-  //console.log('privateKey:', privateKey);
+
   const signature = keyPair.privateKey.sign(BigInt(message));
   const signature2 = bc.bigintToBase64(signature);
   console.log('signature:', signature2);
@@ -142,48 +127,105 @@ app.post('/messageToUnpaillier/:message' , async (req, res) => {
 
 
 });
-/*app.post('/sign', async (req, res) => {
-  const { message, key } = req.body;
-  const privateKey = new MyRsaPrivateKey(BigInt(key.d), BigInt(key.n));
-  const signature = privateKey.sign(BigInt(message));
-  res.json({ signature: signature.toString() });
-});*/
-/*app.post('/toverify/:message' , async (req, res) => {
-  console.log('req.params:', req.params)
-  const { message } = req.params;
-  console.log('message:', message)
-  const keyPair = await keysPromise
-  if (!message) {
-    return res.status(400).json({ error: 'Invalid request body' });
+function generateCoefficients(threshold: number): number[] {
+  const coefficients: number[] = [];
+  for (let i = 0; i < threshold - 1; i++) {
+    // Generate a random coefficient and add it to the array
+    const coefficient = Math.floor(Math.random() * 100); // Adjust the range as needed
+    coefficients.push(coefficient);
   }
-  const d = BigInt(message)
-  console.log('d:', d)
-  const verified = keyPair.publicKey.verify(BigInt(message));
-  console.log('verified:', verified)
-  res.json({ verified: verified.toString() });
-});*/
+  return coefficients;
+}
+//Shamir
+app.post('/shamir/:message/:threshold/:totalshares', async (req, res) => {
+  console.log('req.params:', req.params);
+  const { message } = req.params;
+  const { threshold } = req.params;
+  const { totalshares } = req.params;
+  console.log('message:', message);
+  console.log('threshold:', threshold);
+  console.log('totalshares:', totalshares);
+  const INTthreshold = parseInt(threshold);
+  console.log('INTthreshold:', INTthreshold);
+  const INTtotalshares = parseInt(totalshares);
+  console.log('INTtotalshares:', INTtotalshares);
 
-//decrypt
-/*app.post('/decrypt', async (req, res) => {
-  const { ciphertext, key } = req.body;
-  const privateKey = new MyRsaPrivateKey(BigInt(key.d), BigInt(key.n));
-  const decrypted = privateKey.decrypt(BigInt(ciphertext));
-  res.json({ decrypted: decrypted.toString() });
-});*/
+  const coefficients = generateCoefficients(INTthreshold);
 
-//verify
-/*app.get('/verify', async (req, res) => {
-  const message = BigInt(req.query.message);
-  const signature = BigInt(req.query.signature);
-  const publicKey = new MyRsaPublicKey(BigInt(req.query.e), BigInt(req.query.n));
-  const verified = publicKey.verify(signature);
-  res.json({
-    message: message.toString(),
-    signature: signature.toString(),
-    publicKey: publicKey.toString(),
-    verified: (verified === message)
-  });
-});*/
+  const shares = [];
+  for (let i = 1; i <= INTtotalshares; i++) {
+    const x = i; // Share index
+    let y = parseInt(message);
+    for (let j = 0; j < INTthreshold - 1; j++) {
+      const power = Math.pow(x, j + 1);
+      const term = coefficients[j] * power;
+      y += term;
+    }
+    shares.push({ x, y });
+  }
+
+  return res.status(200).json(shares);
+});
+
+
+
+app.post('/reconstruct', async (req, res) => {
+  const { shares } = req.body;
+  console.log('shares:', shares);
+
+  const threshold = shares[0].threshold;
+  if (shares.length < threshold) {
+    return res.status(400).json({ error: 'Insufficient shares to reconstruct the secret' });
+  }
+
+  // Extraemos x e y de las shares
+  const xValues = shares.map((share: any) => share.x);
+  const yValues = shares.map((share: any) => share.y);
+
+  
+  const secret = lagrangeInterpolation(xValues, yValues);
+
+  return res.status(200).json({ secret });
+});
+
+function lagrangeInterpolation(xValues: number[], yValues: number[]): number {
+  const n = xValues.length;
+  let result = 0;
+
+  for (let i = 0; i < n; i++) {
+    let term = yValues[i];
+    for (let j = 0; j < n; j++) {
+      if (i !== j) {
+        term *= (0 - xValues[j]) / (xValues[i] - xValues[j]);
+      }
+    }
+    result += term;
+  }
+
+  return result;
+}
+
+
+
+/*function createShares(secret: number, threshold: number, totalShares: number): { x: number, y: number }[] {
+  const coefficients = generateCoefficients(threshold);
+  const shares: { x: number, y: number }[] = [];
+  for (let i = 1; i <= totalShares; i++) {
+    const x = i; // Share index
+    let y = secret;
+    for (let j = 0; j < threshold - 1; j++) {
+      const power = Math.pow(x, j + 1);
+      const term = coefficients[j] * power;
+      y += term;
+    }
+    shares.push({ x, y });
+  }
+  return shares;
+}*/
+
+
+
+
 app.listen(port, () => {
   console.log(`listening on port ${port}`);
 });
